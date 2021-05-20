@@ -1,7 +1,7 @@
-package file
+package files
 
 import (
-	"io/ioutil"
+	"os"
 
 	sdk "github.com/hashicorp/sentinel-sdk"
 	framework "github.com/hashicorp/sentinel-sdk/framework"
@@ -29,14 +29,34 @@ func (m *root) Get(key string) (interface{}, error) {
 // framework.Call impl.
 func (m *root) Func(key string) interface{} {
 	switch key {
-	case "open":
+	case "read":
 		return func(path string) (interface{}, error) {
-			contents, err := ioutil.ReadFile(path)
+			contents, err := os.ReadFile(path)
 			if err != nil {
 				return nil, err
 			}
 			return string(contents), nil
 		}
+
+	case "list":
+		return func(path string) (interface{}, error) {
+			var files []map[string]interface{}
+
+			fileInfo, err := os.ReadDir(path)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, file := range fileInfo {
+				m := map[string]interface{}{
+					"name":      file.Name(),
+					"directory": file.IsDir(),
+				}
+				files = append(files, m)
+			}
+			return files, nil
+		}
 	}
+
 	return nil
 }
